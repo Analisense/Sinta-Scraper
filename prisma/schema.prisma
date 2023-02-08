@@ -13,7 +13,7 @@ datasource db {
 model Affiliation {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   numericId         Int?
-  code              String?
+  codePT            String?
   name              String?
   nameAbbrev        String?
   imgUrl            String?
@@ -28,4 +28,27 @@ model Affiliation {
   updatedAt DateTime @updatedAt
 
   @@map("affiliations")
+}
+
+model Author {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  sintaId             String?
+  name                String?
+  profileUrl          String?
+  profileImgUrl       String?
+  universityName      String?
+  universityUrl       String?
+  codePT              String?
+  prodiName           String?
+  prodiUrl            String?
+  sintaScore3Yr       String?
+  sintaScoreOverall   String?
+  subject             Json[]
+  scopusHIndex        String?
+  wosHIndex           String?
+  googleScholarHIndex String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("authors")
 }

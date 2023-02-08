@@ -1,6 +1,6 @@
 export default class AffiliationsDto {
   numericId?: number;
-  code?: string;
+  codePT?: string;
   name?: string;
   nameAbbrev?: string;
   imgUrl?: string;

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import puppeteer, { Browser } from 'puppeteer';
+import HelperClass from 'src/common/helper/helper-class';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -29,13 +30,11 @@ export class AffiliationsService {
       pageNumber++
     ) {
       promises.push(this.getAllAffiliations(pageNumber, browser));
-      if (pageNumber % 100 === 0) await this.sleepNow(60000);
+      if (pageNumber % 100 === 0) await HelperClass.sleepNow(60000);
     }
 
     return await Promise.all(promises);
   };
-  sleepNow = (delay: number) =>
-    new Promise((resolve) => setTimeout(resolve, delay));
 
   puppeteerTotalPaginationNumber = async () => {
     const browser = await puppeteer.launch();
@@ -81,13 +80,13 @@ export class AffiliationsService {
             card
               .querySelector('div.profile-id')
               .textContent.trim()
-              .split(' ')[2],
+              .split(' ')[2] as unknown,
           ),
 
-          code: card
+          codePT: card
             .querySelector('div.profile-id')
             .textContent.trim()
-            .split(' ')[7],
+            .split(' ')[6],
 
           name: card.querySelector('div.affil-name').textContent.trim(),
 
@@ -134,7 +133,8 @@ export class AffiliationsService {
     await page.close();
 
     return affiliationCards.forEach(async (affiliation) => {
-      await this.prisma.affiliation.create({ data: affiliation });
+      //  TODO : activated when u want to save to database
+      // await this.prisma.affiliation.create({ data: affiliation });
     });
   }
 }
