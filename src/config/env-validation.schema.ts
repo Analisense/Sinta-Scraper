@@ -12,4 +12,8 @@ export const envValidationSchema = Joi.object({
 
   // Database
   DATABASE_URL: Joi.string().required(),
+  // Database
+  MONGO_URI_ATLAS: Joi.string().required(),
+  // Database
+  MONGO_URI_LOCAL: Joi.string().required(),
 });

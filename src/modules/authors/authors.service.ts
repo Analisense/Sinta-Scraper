@@ -163,7 +163,8 @@ export class AuthorsService {
       pageNumber++
     ) {
       promises.push(this.getAllAuthorsByCheerio(pageNumber));
-      if (pageNumber % 100 === 0) await HelperClass.sleepNow(60000);
+      // await HelperClass.sleepNow(500);
+      if (pageNumber % 100 === 0) await HelperClass.sleepNow(30000);
     }
     Promise.all(promises);
   };
@@ -174,6 +175,9 @@ export class AuthorsService {
 
       const page = await axios.get(
         `https://sinta.kemdikbud.go.id/authors?page=${pageNumber}`,
+        {
+          timeout: 360000,
+        },
       );
 
       const $ = cheerio.load(page.data);
@@ -281,7 +285,7 @@ export class AuthorsService {
       return pageNumber;
     } catch (error) {
       this.logger.error(error);
-      throw new Error('Error Request Promise');
+      throw error;
     }
     // rp(`https://sinta.kemdikbud.go.id/authors?page=${pageNumber}`)
     //   .then(async (html) => {})

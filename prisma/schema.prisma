@@ -12,7 +12,7 @@ datasource db {
 
 model Affiliation {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  numericId         Int?
+  numericId         Int?    @unique
   codePT            String?
   name              String?
   nameAbbrev        String?
@@ -32,7 +32,7 @@ model Affiliation {
 
 model Author {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
-  sintaId             String?
+  sintaId             String?  @unique
   name                String?
   profileUrl          String?
   profileImgUrl       String?
@@ -51,4 +51,32 @@ model Author {
   updatedAt           DateTime @updatedAt
 
   @@map("authors")
+}
+
+model AffiliationAuthors {
+  id                  String      @id @default(auto()) @map("_id") @db.ObjectId
+  sintaId             String?     @unique
+  name                String?
+  profileUrl          String?
+  profileImgUrl       String?
+  university          University?
+  prodiName           String?
+  prodiUrl            String?
+  scopusHIndex        String?
+  googleScholarHIndex String?
+  sintaScore3Yr       String?
+  sintaScore          String?
+  affilScore3Yr       String?
+  affilScore          String?
+
+  @@map("affiliation_authors")
+}
+
+type University {
+  name                 String?
+  abbrevName           String?
+  pddiktiCode          String?
+  imgUrl               String?
+  location             String?
+  numericIdAffiliation Int?
 }

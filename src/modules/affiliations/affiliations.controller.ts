@@ -7,8 +7,13 @@ export class AffiliationsController {
   constructor(private readonly affiliationsService: AffiliationsService) {}
 
   @ApiTags('Affiliations')
-  @Get('affiliations')
+  @Get('scrapingAllAffiliations')
   scrapingAffiliations() {
     return this.affiliationsService.scrapingAffiliations();
+  }
+
+  @Get('getAffiliations')
+  getAffiliations() {
+    return this.affiliationsService.getAffiliations();
   }
 }

@@ -8,7 +8,9 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class AffiliationsService {
   constructor(private readonly prisma: PrismaService) {}
   private readonly logger = new Logger(AffiliationsService.name);
-
+  async getAffiliations() {
+    return await this.prisma.affiliation.findMany();
+  }
   async scrapingAffiliations() {
     try {
       await this.puppeteerAffiliations();
@@ -29,7 +31,7 @@ export class AffiliationsService {
       pageNumber <= totalPaginationNumber;
       pageNumber++
     ) {
-      promises.push(this.getAllAffiliations(pageNumber, browser));
+      promises.push(this.puppeteerAllAffiliations(pageNumber, browser));
       if (pageNumber % 100 === 0) await HelperClass.sleepNow(60000);
     }
 
@@ -51,7 +53,7 @@ export class AffiliationsService {
     return totalPaginationNumber;
   };
 
-  async getAllAffiliations(pageNumber: number, browser: Browser) {
+  async puppeteerAllAffiliations(pageNumber: number, browser: Browser) {
     console.log(`Scraping page number: ${pageNumber}`);
 
     if (!browser) {
