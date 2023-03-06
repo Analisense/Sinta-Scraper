@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import puppeteer, { Browser } from 'puppeteer';
-import HelperClass from 'src/common/helper/helper-class';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 import { PrismaService } from 'src/prisma/prisma.service';
+import AffiliationsDto from './dto/affiliations.dto';
 
 @Injectable()
 export class AffiliationsService {
@@ -13,130 +13,120 @@ export class AffiliationsService {
   }
   async scrapingAffiliations() {
     try {
-      await this.puppeteerAffiliations();
+      // await this.puppeteerAffiliations();
 
-      return;
+      await this.cheerioAffiliations();
+      return 'success';
     } catch (error) {
       this.logger.error(error);
       throw error;
     }
   }
-  puppeteerAffiliations = async () => {
-    const promises = [];
-    const browser = await puppeteer.launch();
-    const totalPaginationNumber = await this.puppeteerTotalPaginationNumber();
 
-    for (
-      let pageNumber = 1;
-      pageNumber <= totalPaginationNumber;
-      pageNumber++
-    ) {
-      promises.push(this.puppeteerAllAffiliations(pageNumber, browser));
-      if (pageNumber % 100 === 0) await HelperClass.sleepNow(60000);
+  async cheerioAffiliations() {
+    const totalPaginationNumber = await this.cheerioTotalPaginationNumber();
+    let pageNumber = 1;
+    while (true) {
+      try {
+        await this.cheerioAllAffiliations(pageNumber);
+        if (pageNumber === totalPaginationNumber) break;
+        pageNumber++;
+      } catch (error) {
+        console.log(`### RETRYING PAGE NUMBER: ${pageNumber} ###`);
+        // this.logger.error(error);
+      }
     }
+  }
 
-    return await Promise.all(promises);
-  };
-
-  puppeteerTotalPaginationNumber = async () => {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-
-    await page.goto(`https://sinta.kemdikbud.go.id/affiliations`);
-    await page.waitForSelector('body > div');
-    const totalPaginationNumber = await page.$eval(
-      'div.text-center.pagination-text',
-      (el) => el.textContent.split(' ')[3].trim() as unknown as number,
+  async cheerioTotalPaginationNumber() {
+    const page = await axios.get('https://sinta.kemdikbud.go.id/affiliations');
+    const $ = cheerio.load(page.data);
+    const totalPaginationNumber = parseInt(
+      $('div.text-center.pagination-text').text().trim().split(' ')[3],
     );
 
-    await browser.close();
     return totalPaginationNumber;
-  };
+  }
 
-  async puppeteerAllAffiliations(pageNumber: number, browser: Browser) {
+  async cheerioAllAffiliations(pageNumber: number) {
     console.log(`Scraping page number: ${pageNumber}`);
 
-    if (!browser) {
-      browser = await puppeteer.launch();
-    }
-
-    const page = await browser.newPage();
-
-    // Configure the navigation timeout
-    await page.setDefaultNavigationTimeout(0);
-
-    await page.goto(
+    const page = await axios.get(
       `https://sinta.kemdikbud.go.id/affiliations?page=${pageNumber}`,
     );
 
-    await page.waitForSelector('div.content');
+    const $ = cheerio.load(page.data);
 
-    const affiliationCards = await page.evaluate(() => {
-      const cardAffiliations = Array.from(
-        document.querySelectorAll('div.content-list > div.list-item'),
+    const cardAffiliations = $('div.content-list > div.list-item');
+
+    cardAffiliations.map(async (i, el) => {
+      const affiliation: AffiliationsDto = {
+        numericId: null,
+        codePT: null,
+        name: null,
+        nameAbbrev: null,
+        imgUrl: null,
+        origin: null,
+        departmentUrl: null,
+        totalDepartment: null,
+        authorCount: null,
+        sintaScore3Yr: null,
+        sintaScoreOverall: null,
+      };
+
+      affiliation.numericId = parseInt(
+        $(el).find('div.profile-id').text().trim().split(' ')[2],
       );
 
-      const data: Prisma.AffiliationCreateInput[] = cardAffiliations.map(
-        (card) => ({
-          numericId: Number(
-            card
-              .querySelector('div.profile-id')
-              .textContent.trim()
-              .split(' ')[2] as unknown,
-          ),
+      affiliation.codePT = $(el)
+        .find('div.profile-id')
+        .text()
+        .trim()
+        .split(' ')[6];
 
-          codePT: card
-            .querySelector('div.profile-id')
-            .textContent.trim()
-            .split(' ')[6],
+      affiliation.name = $(el).find('div.affil-name').text().trim();
 
-          name: card.querySelector('div.affil-name').textContent.trim(),
+      affiliation.nameAbbrev = $(el).find('div.affil-abbrev').text().trim();
 
-          nameAbbrev: card.querySelector('div.affil-abbrev').textContent.trim(),
+      affiliation.imgUrl = $(el)
+        .find('div > .img-thumbnail.avatar-affil')
+        .attr('src')
+        .trim();
 
-          imgUrl: card
-            .querySelector('div > .img-thumbnail.avatar-affil')
-            .getAttribute('src')
-            .trim(),
+      affiliation.origin = $(el).find('div.affil-loc > a').text().trim();
 
-          origin: card.querySelector('div.affil-loc > a').textContent.trim(),
-
-          totalDepartment: Number(
-            card
-              .querySelector('div.stat-prev > span.num-stat > a')
-              .textContent.trim()
-              .split(' ')[0],
-          ),
-
-          departmentUrl: card
-            .querySelector('div.stat-prev > span.num-stat > a')
-            .getAttribute('href'),
-
-          authorCount: card
-            .querySelector('div.stat-prev > span.num-stat.ml-3')
-            .textContent.trim()
-            .split(' ')[0],
-
-          sintaScore3Yr: card
-            .querySelectorAll(
-              'div.list-item > div > div > div.col > div.pr-num',
-            )[0]
-            .textContent.trim(),
-
-          sintaScoreOverall: card
-            .querySelectorAll(
-              'div.list-item > div > div > div.col > div.pr-num',
-            )[1]
-            .textContent.trim(),
-        }),
+      affiliation.totalDepartment = Number(
+        $(el)
+          .find('div.stat-prev > span.num-stat > a')
+          .text()
+          .trim()
+          .split(' ')[0],
       );
-      return data;
-    });
-    await page.close();
 
-    return affiliationCards.forEach(async (affiliation) => {
-      //  TODO : activated when u want to save to database
-      // await this.prisma.affiliation.create({ data: affiliation });
+      affiliation.departmentUrl = $(el)
+        .find('div.stat-prev > span.num-stat > a')
+        .attr('href');
+
+      affiliation.authorCount = $(el)
+        .find('div.stat-prev > span.num-stat.ml-3')
+        .text()
+        .trim()
+        .split(' ')[0];
+
+      $('div.list-item > div > div > div.col > div.pr-num', el).map((i, el) => {
+        if (i % 2 === 0) {
+          affiliation.sintaScore3Yr = $(el).text().trim();
+        }
+        if (i % 2 === 1) {
+          affiliation.sintaScoreOverall = $(el).text().trim();
+        }
+      });
+
+      await this.prisma.affiliation.upsert({
+        where: { numericId: affiliation.numericId },
+        create: affiliation,
+        update: affiliation,
+      });
     });
   }
 }

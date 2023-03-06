@@ -7,6 +7,7 @@ import { AffiliationAuthorsModule } from './modules/affiliation-authors/affiliat
 import { AffiliationsModule } from './modules/affiliations/affiliations.module';
 import { AuthorsModule } from './modules/authors/authors.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { JournalsModule } from './modules/journals/journals.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AffiliationsModule,
     AuthorsModule,
     AffiliationAuthorsModule,
+    JournalsModule,
   ],
   controllers: [AppController],
 })

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import mongoose from 'mongoose';
@@ -16,18 +17,17 @@ export class AffiliationAuthorsService {
   ) {}
   private readonly logger = new Logger(AffiliationAuthorsService.name);
   private totalInsertedData = 1;
-  async getAffiliationAuthors() {
+  async getAffiliationAuthors(indexInit: number) {
     try {
       const listAffiliationsId = await this.prisma.affiliation.findMany({
         select: { numericId: true },
         orderBy: { numericId: 'asc' },
       });
-
       const outputArray = listAffiliationsId.map((item) => item.numericId);
 
-      for (let index = 0; index < outputArray.length; index++) {
+      for (let index = indexInit; index < outputArray.length; index++) {
         await this.cheerioGetAffiliationAuthors(outputArray[index], index);
-        await HelperClass.sleepNow(5000);
+        await HelperClass.sleepNow(10000);
       }
       return 'Success';
     } catch (error) {
@@ -37,24 +37,54 @@ export class AffiliationAuthorsService {
   }
 
   async cheerioGetAffiliationAuthors(affiliationId, index) {
-    try {
-      console.log(`\n------------SCRAPING INDEX ${index}------------`);
-
-      const totalPage = await this.getTotalPage(affiliationId);
-
-      const promises = [];
-      for (let numberPage = 1; numberPage <= totalPage; numberPage++) {
-        promises.push(
-          this.scrapingAffiliationAuthors(affiliationId, numberPage, totalPage),
+    let numberPage = 1;
+    const totalPage = await this.getTotalPage(affiliationId);
+    console.log(`\n------------SCRAPING INDEX ${index}------------`);
+    while (true) {
+      try {
+        await this.scrapingAffiliationAuthors(
+          affiliationId,
+          numberPage,
+          totalPage,
         );
-        await HelperClass.sleepNow(200);
-        if (numberPage % 5 === 0) await HelperClass.sleepNow(5000);
+      } catch (error) {
+        this.logger.error(error);
+        console.log(`### RETRYING FETCH DATA INDEX ${index} ###`);
       }
-      return await Promise.all(promises);
-    } catch (error) {
-      this.logger.error(error);
-      throw new Error('Error in cheerioGetAffiliationAuthors');
+      // await HelperClass.sleepNow(10000);
+      numberPage++;
+      if (numberPage === totalPage) break;
     }
+
+    return;
+    // try {
+    //   console.log(`\n------------SCRAPING INDEX ${index}------------`);
+
+    //   const totalPage = await this.getTotalPage(affiliationId);
+
+    //   // const promises = [];
+    //   // for (let numberPage = 1; numberPage <= totalPage; numberPage++) {
+    //   //   promises.push(
+    //   //     this.scrapingAffiliationAuthors(affiliationId, numberPage, totalPage),
+    //   //   );
+    //   //   await HelperClass.sleepNow(200);
+    //   //   if (numberPage % 10 === 0) await HelperClass.sleepNow(10000);
+    //   // }
+    //   // return await Promise.all(promises);
+
+    //   for (let numberPage = 1; numberPage <= totalPage; numberPage++) {
+    //     await this.scrapingAffiliationAuthors(
+    //       affiliationId,
+    //       numberPage,
+    //       totalPage,
+    //     );
+    //   }
+    // } catch (error) {
+    //   this.logger.error(error);
+    //   // console.log(`TRYING FETCH DATA INDEX ${index}`);
+    //   // this.getAffiliationAuthors(index);
+    //   throw new Error('Error in cheerioGetAffiliationAuthors');
+    // }
   }
 
   private async getTotalPage(affiliationId: any) {
@@ -70,8 +100,8 @@ export class AffiliationAuthorsService {
       .text()
       .trim()
       .replace('.', '')
-      .split(' ')[3] as unknown as number;
-    return totalPage;
+      .split(' ')[3];
+    return parseInt(totalPage);
   }
 
   private async scrapingAffiliationAuthors(
@@ -101,11 +131,13 @@ export class AffiliationAuthorsService {
         .text()
         .trim(),
       location: $(el).find('div.meta-profile > a.affil-loc').text().trim(),
-      numericIdAffiliation: $(el)
-        .find('div.meta-profile > a.affil-code')
-        .text()
-        .trim()
-        .split(' ')[2] as unknown as number,
+      numericIdAffiliation: parseInt(
+        $(el)
+          .find('div.meta-profile > a.affil-code')
+          .text()
+          .trim()
+          .split(' ')[2],
+      ),
       pddiktiCode: $(el)
         .find('div.meta-profile > a.affil-code')
         .text()
@@ -193,13 +225,15 @@ export class AffiliationAuthorsService {
             affiliationTemp.affilScore = $(el).text().replace('.', '');
         });
 
-      // await this.prisma.affiliationAuthors.create({ data: affiliationTemp });
+      const insertData: Prisma.AffiliationAuthorsCreateInput = affiliationTemp;
 
-      // await this.prisma.affiliationAuthors.upsert({
-      //   where: { sintaId: affiliationTemp.sintaId },
-      //   update: affiliationTemp,
-      //   create: affiliationTemp,
-      // });
+      // await this.prisma.affiliationAuthors.create({ data: insertData });
+
+      return await this.prisma.affiliationAuthors.upsert({
+        where: { sintaId: insertData.sintaId },
+        update: insertData,
+        create: insertData,
+      });
 
       // affiliationAuthorsData.push(affiliationTemp);
 
@@ -209,9 +243,7 @@ export class AffiliationAuthorsService {
       //   { upsert: true },
       // );
 
-      await this.affiliationAuthorsModel.create(affiliationTemp);
-
-      return;
+      // await this.affiliationAuthorsModel.create(affiliationTemp);
     });
 
     // await this.prisma.affiliationAuthors.createMany({

@@ -14,11 +14,11 @@ export default class AffiliationAuthorsDto {
   affilScore?: string;
 }
 
-class University {
+type University = {
   name?: string;
   abbrevName?: string;
   pddiktiCode?: string;
   imgUrl?: string;
   location?: string;
-  codePT?: string;
-}
+  numericIdAffiliation?: number;
+};

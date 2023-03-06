@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AffiliationAuthorsService } from './affiliation-authors.service';
 
@@ -9,8 +9,8 @@ export class AffiliationAuthorsController {
     private readonly affiliationAuthorsService: AffiliationAuthorsService,
   ) {}
 
-  @Get('getAffiliationAuthors')
-  getAffiliationAuthors() {
-    return this.affiliationAuthorsService.getAffiliationAuthors();
+  @Get('getAffiliationAuthors/:indexInit')
+  getAffiliationAuthors(@Param('indexInit', ParseIntPipe) indexInit?: number) {
+    return this.affiliationAuthorsService.getAffiliationAuthors(indexInit);
   }
 }

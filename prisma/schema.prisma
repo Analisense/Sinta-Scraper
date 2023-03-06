@@ -68,8 +68,36 @@ model AffiliationAuthors {
   sintaScore          String?
   affilScore3Yr       String?
   affilScore          String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@map("affiliation_authors")
+}
+
+model Journals {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  numericId      Int             @unique
+  title          String
+  titleUrl       String
+  imgUrl         String
+  label          JournalDetail[]
+  affiliation    JournalDetail
+  pISSN          String
+  eISSN          String
+  subjectArea    String[]
+  impact         String
+  h5Index        String
+  citations5Year String
+  citations      String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("journals")
+}
+
+type JournalDetail {
+  name String
+  url  String
 }
 
 type University {
