@@ -27,12 +27,12 @@ export class AffiliationAuthorsService {
 
       for (let index = indexInit; index < outputArray.length; index++) {
         await this.cheerioGetAffiliationAuthors(outputArray[index], index);
-        await HelperClass.sleepNow(10000);
+        // await HelperClass.sleepNow(10000);
       }
       return 'Success';
     } catch (error) {
       this.logger.error(error);
-      throw new Error('Error in getAffiliationAuthors');
+      // throw new Error('Error in getAffiliationAuthors');
     }
   }
 
@@ -47,44 +47,17 @@ export class AffiliationAuthorsService {
           numberPage,
           totalPage,
         );
+        if (numberPage === totalPage || Number.isNaN(totalPage)) break;
+        if (numberPage % 50 === 0) await HelperClass.sleepNow(15000);
+        // await HelperClass.sleepNow(1000);
+        numberPage++;
       } catch (error) {
         this.logger.error(error);
         console.log(`### RETRYING FETCH DATA INDEX ${index} ###`);
       }
-      // await HelperClass.sleepNow(10000);
-      numberPage++;
-      if (numberPage === totalPage) break;
     }
 
     return;
-    // try {
-    //   console.log(`\n------------SCRAPING INDEX ${index}------------`);
-
-    //   const totalPage = await this.getTotalPage(affiliationId);
-
-    //   // const promises = [];
-    //   // for (let numberPage = 1; numberPage <= totalPage; numberPage++) {
-    //   //   promises.push(
-    //   //     this.scrapingAffiliationAuthors(affiliationId, numberPage, totalPage),
-    //   //   );
-    //   //   await HelperClass.sleepNow(200);
-    //   //   if (numberPage % 10 === 0) await HelperClass.sleepNow(10000);
-    //   // }
-    //   // return await Promise.all(promises);
-
-    //   for (let numberPage = 1; numberPage <= totalPage; numberPage++) {
-    //     await this.scrapingAffiliationAuthors(
-    //       affiliationId,
-    //       numberPage,
-    //       totalPage,
-    //     );
-    //   }
-    // } catch (error) {
-    //   this.logger.error(error);
-    //   // console.log(`TRYING FETCH DATA INDEX ${index}`);
-    //   // this.getAffiliationAuthors(index);
-    //   throw new Error('Error in cheerioGetAffiliationAuthors');
-    // }
   }
 
   private async getTotalPage(affiliationId: any) {
@@ -229,19 +202,24 @@ export class AffiliationAuthorsService {
 
       // await this.prisma.affiliationAuthors.create({ data: insertData });
 
-      return await this.prisma.affiliationAuthors.upsert({
-        where: { sintaId: insertData.sintaId },
-        update: insertData,
-        create: insertData,
-      });
+      // try {
+      //   return await this.prisma.affiliationAuthors.upsert({
+      //     where: { sintaId: insertData.sintaId },
+      //     update: insertData,
+      //     create: insertData,
+      //   });
+      // } catch (error) {
+      //   this.logger.error(error);
+      //   throw new Error('ERROR UPSERTING DATA');
+      // }
 
       // affiliationAuthorsData.push(affiliationTemp);
 
-      // await this.affiliationAuthorsModel.findOneAndUpdate(
-      //   { sintaId: affiliationTemp.sintaId },
-      //   affiliationTemp,
-      //   { upsert: true },
-      // );
+      await this.affiliationAuthorsModel.findOneAndUpdate(
+        { sintaId: affiliationTemp.sintaId },
+        affiliationTemp,
+        { upsert: true },
+      );
 
       // await this.affiliationAuthorsModel.create(affiliationTemp);
     });
@@ -250,6 +228,6 @@ export class AffiliationAuthorsService {
     //   data: affiliationAuthorsData,
     // });
 
-    return result;
+    // return result;
   }
 }
